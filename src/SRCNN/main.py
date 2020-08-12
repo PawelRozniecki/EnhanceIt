@@ -18,11 +18,11 @@ def main():
 
     model = SRCNN()
     model.to(DEVICE)
-    model.load_state_dict(torch.load(MODEL_SAVE_PATH))
+    model.load_state_dict(torch.load(MODEL_SAVE_PATH,map_location=torch.device('cpu')))
 
     # image to resize
 
-    input_image = Image.open("/Users/pingwin/PycharmProjects/EnhanceIt/src/dataset/T91/1/tt17.png").convert('RGB')
+    input_image = Image.open('/Users/pingwin/PycharmProjects/EnhanceIt/src/dataset/T91/1/tt17.png').convert('RGB')
     input_image = input_image.resize(
         (
             input_image.size[0] * UPSCALE_FACTOR,
@@ -39,7 +39,7 @@ def main():
 
     output = transforms.ToPILImage()(output.data[0])
     output = output.convert('RGB')
-    output.save('/Users/pingwin/PycharmProjects/EnhanceIt/src/output2.png')
+    output.save('/Users/pingwin/PycharmProjects/EnhanceIt/src/output23.png')
 
 
 

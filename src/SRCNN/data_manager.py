@@ -32,6 +32,7 @@ class FolderData(data.Dataset):
         pred = Image.open(self.files[index]).convert('RGB')
         target = pred.copy()
         pred = pred.filter(ImageFilter.GaussianBlur(2))
+
         pred = self.input_transform(pred)
         target = self.target_transform(target)
 
@@ -50,7 +51,7 @@ def get_training_set(root, crop_size, upscale_factor):
     return FolderData(root_dir=root, crop_size=crop_size)
 
 def get_testing_set(root,crop_size,upscale_factor):
-   return FolderData(root_dir=root,crop_size=crop_size)
+   return FolderData(root_dir=root,  crop_size=crop_size)
 
 def input_transform(crop_size):
     return Compose([

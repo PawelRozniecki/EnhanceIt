@@ -1,8 +1,9 @@
 import sys
-sys.path.append('/Users/pingwin/PycharmProjects/EnhanceIt')
+print(sys.executable)
 
-
+sys.path.append('/Users/pingwin/PycharmProjects/EnhanceIt/venv/bin/python')
 import torch
+
 import torch.nn as nn
 
 
@@ -51,8 +52,8 @@ print("initiating SRCNN training... ")
 
 dataset = ImageFolder(DATASET_PATH)
 
-data_loader = DataLoader(get_training_set(DATASET_PATH, 256, UPSCALE_FACTOR), batch_size=BATCH_SIZE, shuffle=True)
-test_loader = DataLoader(get_testing_set(DATASET_PATH, 256, UPSCALE_FACTOR), batch_size=1)
+data_loader = DataLoader(get_training_set(DATASET_PATH, 16, UPSCALE_FACTOR), batch_size=BATCH_SIZE, num_workers=2 ,shuffle=True)
+test_loader = DataLoader(get_testing_set(DATASET_PATH, 16, UPSCALE_FACTOR), batch_size=1)
 
 criterion = nn.MSELoss()
 optimizer = optim.Adam([
@@ -107,4 +108,4 @@ for epoch in range(EPOCHS):
         best_psnr = avg_psnr
         best_weight = copy.deepcopy(model.state_dict())
     print('best epoch: {}, psnr: {:.2f}'.format(best_epoch, best_psnr/len(test_loader)))
-    torch.save(best_weight, '/home/pawel/PycharmProjects/EnhanceIt/srcbest.pth')
+    torch.save(best_weight, '/Users/pingwin/PycharmProjects/EnhanceIt/src/bestModel.pth')
