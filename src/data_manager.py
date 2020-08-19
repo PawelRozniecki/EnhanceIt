@@ -1,13 +1,10 @@
-from torchvision.transforms import Compose, CenterCrop, ToTensor, Resize, Normalize, RandomHorizontalFlip
-from torchvision.datasets import ImageFolder
+from torchvision.transforms import Compose, CenterCrop, ToTensor, Resize
 from torch.utils import data
 import os
-import cv2 as cv
-import numpy as np
 
 from PIL import Image, ImageFilter
 
-from src.SRCNN.constants import *
+from src.constants import *
 
 
 def get_images(root_dir):
@@ -28,6 +25,7 @@ class FolderData(data.Dataset):
     def __init__(self, root_dir, crop_size):
         super(FolderData, self).__init__()
         self.files = get_images(root_dir)
+
         self.input_transform = input_transform(crop_size)
         self.target_transform = get_target_transforms(crop_size)
 
@@ -35,7 +33,6 @@ class FolderData(data.Dataset):
         prediction = load_img(self.files[index])
         target = prediction.copy()
         prediction = prediction.filter(ImageFilter.GaussianBlur(2))
-
         prediction = self.input_transform(prediction)
         target = self.target_transform(target)
 
@@ -60,10 +57,10 @@ def get_testing_set(root, crop_size, upscale_factor):
 
 def input_transform(crop_size):
     return Compose([
-
         CenterCrop(crop_size),
         Resize(crop_size//UPSCALE_FACTOR),
         Resize(crop_size, interpolation=Image.BICUBIC),
+
         ToTensor(),
 
     ])

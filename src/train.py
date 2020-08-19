@@ -5,32 +5,20 @@ sys.path.append('/home/pawel/PycharmProjects/EnhanceIt')
 import torch
 import torch.nn as nn
 
-from PIL import Image
-import PIL
-from PIL import ImageFilter as IF
 from tqdm import tqdm
 import copy
 
-import numpy
 from math import log10
-from torch.autograd import Variable
 
-from torchvision.transforms import transforms
-from src.SRCNN.constants import *
-from src.SRCNN.data_manager import *
+from src.data_manager import *
 from torch.utils.data.dataloader import DataLoader
 
-import torchvision.models as models
-from src.SRCNN.model import SRCNN
-import torch.nn.functional as F
-from torch.utils import data
+from src.model import SRCNN
 
-import torchvision
 from torchvision.datasets import ImageFolder
 
 import torch.optim as optim
 
-from src.SRCNN.model import Model
 torch.manual_seed(0)
 torch.cuda.manual_seed(0)
 model = SRCNN()
@@ -55,9 +43,10 @@ criterion = nn.MSELoss()
 optimizer = optim.Adam([
     {'params': model.conv1.parameters(), "lr": 0.0001},
     {'params': model.conv2.parameters(), "lr": 0.0001},
-    {'params': model.conv3.parameters(), "lr": 0.00001}
+    {'params': model.conv3.parameters(), "lr": 0.0001}
 ], lr=0.00001)
 
+best_weight = copy.deepcopy(model.state_dict())
 
 model.train()
 
@@ -66,8 +55,6 @@ for epoch in range(EPOCHS):
     epoch_loss = 0.0
 
     best_psnr = 0.0
-
-    best_weight = copy.deepcopy(model.state_dict())
 
     for index, data in enumerate(tqdm(data_loader)):
         optimizer.zero_grad()
@@ -86,16 +73,15 @@ for epoch in range(EPOCHS):
         epoch_loss += loss.item()
 
     print("EPOCH {} DONE: AVG. Loss: {:.4f}".format(epoch, epoch_loss / len(data_loader)))
-    torch.save(best_weight, MODEL_SAVE_PATH)
+
     model.eval()
     avg_psnr = 0.0
 
     with torch.no_grad():
         for i, d in enumerate(tqdm(test_loader, desc="testing progress")):
-            test_image, test_label = d
-            test_image = test_image.to(DEVICE)
-            test_label = test_label.to(DEVICE)
-            predication = model(test_image)
+            test_image, test_label = d[0].to(DEVICE), d[1].to(DEVICE)
+
+            predication = model(test_image).clamp(0.0, 1.0)
             loss = criterion(predication, test_label)
             psnr = 10 * log10(1 / loss.item())
             avg_psnr += psnr
@@ -107,8 +93,8 @@ for epoch in range(EPOCHS):
             best_weight = copy.deepcopy(model.state_dict())
             torch.save(best_weight, MODEL_SAVE_PATH)
 
-        print('best epoch: {}, psnr: {:.2f}'.format(best_epoch, best_psnr/len(test_loader)))
-        torch.save(best_weight, '/home/pawel/PycharmProjects/EnhanceIt/srcbest.pth')
+        # print('best epoch: {}, psnr: {:.2f}'.format(best_epoch, best_psnr/len(test_loader)))
+        torch.save(best_weight, '/home/pawel/PycharmProjects/EnhanceIt/EnhanceModelx4.pth')
 
 
 

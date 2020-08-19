@@ -1,30 +1,25 @@
 import sys
-
-sys.path.append('/home/pawel/PycharmProjects/EnhanceIt')
-import os
+sys.path.append('/home/pawel/PycharmProjects/EnhanceIt/')
 import torch
-import torchvision.models as models
-from PIL import Image, ImageEnhance, ImageFilter
-from PIL import ImageDraw
-from PIL import ImageFont
+from PIL import Image
 import numpy as np
-from src.SRCNN.constants import *
+from src.constants import *
 import torchvision.transforms as transforms
-from torch.autograd import Variable
 
-from src.SRCNN.data_manager import crop_image
-from src.SRCNN.model import SRCNN
-from torchvision.transforms import Compose, CenterCrop, ToTensor, Resize, Normalize, RandomHorizontalFlip
-
+from src.model import SRCNN
+from src.constants import *
 
 def main():
+    torch.cuda.empty_cache()
     path = sys.argv[1]
 
     model = SRCNN()
     model.to(DEVICE)
     model.load_state_dict(torch.load(MODEL_SAVE_PATH))
 
+    model.eval()
     # image to resize
+    # for file in os.listdir('/home/pawel/PycharmProjects/EnhanceIt/src/images/1'):
 
     input_image = Image.open(path)
     input_image = input_image.convert('YCbCr')
@@ -32,7 +27,6 @@ def main():
     bicubic = input_image.convert('RGB')
     bicubic.save('/home/pawel/PycharmProjects/EnhanceIt/src/bicubic.png')
 
-    model.eval()
     y, cb, cr = input_image.split()
 
     input_tensor = transforms.ToTensor()
@@ -41,6 +35,7 @@ def main():
     input = input.to(DEVICE)
 
     with torch.no_grad():
+        torch.cuda.empty_cache()
         output = model(input).clamp(0.0,1.0)
 
     output = output.cpu()

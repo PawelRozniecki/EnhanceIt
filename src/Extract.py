@@ -32,7 +32,7 @@ def extract():
         count = 0
         while success:
             for count in tqdm(range(total)):
-                cv2.imwrite("images/frame%d.jpg" % count, image)  # save frame as jpeg  file
+                cv2.imwrite("/home/pawel/PycharmProjects/EnhanceIt/src/images/frame%d.jpg" % count, image)  # save frame as jpeg  file
                 success, image = video_capture.read()
                 # print("new frame: ", success)
                 count += 1
