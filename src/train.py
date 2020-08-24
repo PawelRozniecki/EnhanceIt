@@ -1,5 +1,5 @@
 import sys
-sys.path.append('/home/pawel/PycharmProjects/EnhanceIt')
+sys.path.append('~/EnhanceIt')
 
 
 import torch
