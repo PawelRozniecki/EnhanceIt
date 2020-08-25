@@ -13,7 +13,7 @@ from math import log10
 from src.data_manager import *
 from torch.utils.data.dataloader import DataLoader
 
-from src.model import SRCNN
+from src.model import SRCNN, Generator
 
 from torchvision.datasets import ImageFolder
 
@@ -21,7 +21,7 @@ import torch.optim as optim
 
 torch.manual_seed(0)
 torch.cuda.manual_seed(0)
-model = SRCNN()
+model = Generator(UPSCALE_FACTOR)
 model.to(DEVICE)
 
 print("MODEL INFORMATION\n", model)
@@ -40,11 +40,7 @@ data_loader = DataLoader(get_training_set(DATASET_PATH, SIZE, UPSCALE_FACTOR), b
 test_loader = DataLoader(get_testing_set(TEST_DATAPATH,SIZE, UPSCALE_FACTOR), batch_size=1, shuffle=False)
 
 criterion = nn.MSELoss()
-optimizer = optim.Adam([
-    {'params': model.conv1.parameters(), "lr": 0.0001},
-    {'params': model.conv2.parameters(), "lr": 0.0001},
-    {'params': model.conv3.parameters(), "lr": 0.0001}
-], lr=0.00001)
+optimizer = optim.Adam(model.parameters())
 
 best_weight = copy.deepcopy(model.state_dict())
 
@@ -61,6 +57,7 @@ for epoch in range(EPOCHS):
 
         running_corrects = 0
         batch, target = data
+        print(batch.shape, target.shape)
 
         batch = batch.to(DEVICE)
         target = target.to(DEVICE)
@@ -73,6 +70,7 @@ for epoch in range(EPOCHS):
         epoch_loss += loss.item()
 
     print("EPOCH {} DONE: AVG. Loss: {:.4f}".format(epoch, epoch_loss / len(data_loader)))
+    torch.save(model.state_dict(), MODEL_SAVE_PATH)
 
     model.eval()
     avg_psnr = 0.0
@@ -94,7 +92,7 @@ for epoch in range(EPOCHS):
             torch.save(best_weight, MODEL_SAVE_PATH)
 
         # print('best epoch: {}, psnr: {:.2f}'.format(best_epoch, best_psnr/len(test_loader)))
-        torch.save(best_weight, '/home/pawel/PycharmProjects/EnhanceIt/EnhanceModelx4.pth')
+        torch.save(best_weight, '/Users/pingwin/PycharmProjects/EnhanceIt/src/models/bestSRGAN.pth')
 
 
 

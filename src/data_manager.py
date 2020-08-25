@@ -1,4 +1,4 @@
-from torchvision.transforms import Compose, CenterCrop, ToTensor, Resize
+from torchvision.transforms import Compose, CenterCrop, ToTensor, Resize, ToPILImage
 from torch.utils import data
 import os
 
@@ -17,9 +17,8 @@ def get_images(root_dir):
     return images
 
 def load_img(filepath):
-    img = Image.open(filepath).convert('YCbCr')
-    y, _, _ = img.split()
-    return y
+    img = Image.open(filepath).convert('RGB')
+    return img
 
 class FolderData(data.Dataset):
     def __init__(self, root_dir, crop_size):
@@ -60,9 +59,9 @@ def get_testing_set(root, crop_size, upscale_factor):
 
 def input_transform(crop_size):
     return Compose([
+
         CenterCrop(crop_size),
-        Resize(crop_size//UPSCALE_FACTOR),
-        Resize(crop_size, interpolation=Image.BICUBIC),
+        Resize(crop_size//UPSCALE_FACTOR,interpolation=Image.BICUBIC),
 
         ToTensor(),
 
