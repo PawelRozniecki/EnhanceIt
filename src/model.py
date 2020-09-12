@@ -4,11 +4,51 @@ import math
 
 import torch.nn.functional as F
 
+
 class Discriminator(nn.Module):
     def __init__(self):
-        super(Discriminator,self).__init__()
-        self.conv1 = nn.Conv2d(3, 64, kernel_size=9, git pupadding=4)
-        self.leakyRelu = nn.LeakyReLU()
+        super(Discriminator, self).__init__()
+        self.net = nn.Sequential(
+            nn.Conv2d(3, 64, kernel_size=3, padding=1),
+            nn.LeakyReLU(0.2),
+
+            nn.Conv2d(64, 64, kernel_size=3, stride=2, padding=1),
+            nn.BatchNorm2d(64),
+            nn.LeakyReLU(0.2),
+
+            nn.Conv2d(64, 128, kernel_size=3, padding=1),
+            nn.BatchNorm2d(128),
+            nn.LeakyReLU(0.2),
+
+            nn.Conv2d(128, 128, kernel_size=3, stride=2, padding=1),
+            nn.BatchNorm2d(128),
+            nn.LeakyReLU(0.2),
+
+            nn.Conv2d(128, 256, kernel_size=3, padding=1),
+            nn.BatchNorm2d(256),
+            nn.LeakyReLU(0.2),
+
+            nn.Conv2d(256, 256, kernel_size=3, stride=2, padding=1),
+            nn.BatchNorm2d(256),
+            nn.LeakyReLU(0.2),
+
+            nn.Conv2d(256, 512, kernel_size=3, padding=1),
+            nn.BatchNorm2d(512),
+            nn.LeakyReLU(0.2),
+
+            nn.Conv2d(512, 512, kernel_size=3, stride=2, padding=1),
+            nn.BatchNorm2d(512),
+            nn.LeakyReLU(0.2),
+
+            nn.AdaptiveAvgPool2d(1),
+            nn.Conv2d(512, 1024, kernel_size=1),
+            nn.LeakyReLU(0.2),
+            nn.Conv2d(1024, 1, kernel_size=1)
+        )
+
+    def forward(self, x):
+        batch_size = x.size(0)
+        return torch.sigmoid(self.net(x).view(batch_size))
 
 
 class Generator(nn.Module):
@@ -27,13 +67,13 @@ class Generator(nn.Module):
         self.block6 = ResidualBlock(64)
         self.block7 = nn.Sequential(
             nn.Conv2d(64, 64, kernel_size=3, padding=1),
-            nn.BatchNorm2d(64)
+            # nn.BatchNorm2d(64)
         )
         block8 = [UpsampleBlock(64, 2) for _ in range(upsample_block_num)]
         block8.append(nn.Conv2d(64, 3, kernel_size=9, padding=4))
         self.block8 = nn.Sequential(*block8)
 
-    def forward(self,x):
+    def forward(self, x):
         block1 = self.block1(x)
         block2 = self.block2(block1)
         block3 = self.block3(block2)
@@ -41,22 +81,20 @@ class Generator(nn.Module):
         block5 = self.block5(block4)
         block6 = self.block6(block5)
         block7 = self.block7(block6)
-        block8 = self.block8(block1+block7)
+        block8 = self.block8(block1 + block7)
 
         return (torch.tanh(block8) + 1) / 2
 
-
 class ResidualBlock(nn.Module):
     def __init__(self, channels):
-        super(ResidualBlock,self).__init__()
-        self.conv1 = nn.Conv2d(channels, channels,kernel_size=3, padding=1)
+        super(ResidualBlock, self).__init__()
+        self.conv1 = nn.Conv2d(channels, channels, kernel_size=3, padding=1)
         self.bn1 = nn.BatchNorm2d(channels)
         self.prelu = nn.PReLU()
-        self.conv2 = nn.Conv2d(channels, channels,kernel_size=3,padding=1)
+        self.conv2 = nn.Conv2d(channels, channels, kernel_size=3, padding=1)
         self.bn2 = nn.BatchNorm2d(channels)
 
-
-    def forward(self,x ):
+    def forward(self, x):
         residual = self.conv1(x)
         residual = self.bn1(residual)
         residual = self.prelu(residual)
@@ -65,20 +103,18 @@ class ResidualBlock(nn.Module):
 
         return x + residual
 
-
 class UpsampleBlock(nn.Module):
-    def __init__(self,in_channels, upscale_factor):
-        super(UpsampleBlock,self).__init__()
-        self.conv1 = nn.Conv2d(in_channels, in_channels*upscale_factor**2,kernel_size=3,padding=1)
+    def __init__(self, in_channels, upscale_factor):
+        super(UpsampleBlock, self).__init__()
+        self.conv1 = nn.Conv2d(in_channels, in_channels * upscale_factor ** 2, kernel_size=3, padding=1)
         self.pixel_shuffle = nn.PixelShuffle(upscale_factor)
         self.prelu = nn.PReLU()
 
-    def forward(self,x):
+    def forward(self, x):
         x = self.conv1(x)
         x = self.pixel_shuffle(x)
         x = self.prelu(x)
         return x
-
 
 class SRCNN(nn.Module):
 
@@ -89,11 +125,34 @@ class SRCNN(nn.Module):
         self.conv3 = nn.Conv2d(32, 1, kernel_size=5, padding=2)
         self.relu = nn.ReLU(inplace=True)
 
-
     def forward(self, x):
-
         x = self.relu(self.conv1(x))
         x = self.relu(self.conv2(x))
         x = self.conv3(x)
 
+        return x
+
+class ARCNN(nn.Module):
+    def __init__(self):
+        super(ARCNN, self).__init__()
+        self.base = nn.Sequential(
+            nn.Conv2d(3, 64, kernel_size=9, padding=4),
+            nn.PReLU(),
+            nn.Conv2d(64, 32, kernel_size=7, padding=3),
+            nn.PReLU(),
+            nn.Conv2d(32, 16, kernel_size=1),
+            nn.PReLU()
+        )
+        self.last = nn.Conv2d(16, 3, kernel_size=5, padding=2)
+
+        self._initialize_weights()
+
+    def _initialize_weights(self):
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                nn.init.normal_(m.weight, std=0.001)
+
+    def forward(self, x):
+        x = self.base(x)
+        x = self.last(x)
         return x

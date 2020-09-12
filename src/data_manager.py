@@ -1,9 +1,9 @@
-from torchvision.transforms import Compose, CenterCrop, ToTensor, Resize, ToPILImage
+import sys
+sys.path.append('/Users/pingwin/PycharmProjects/EnhanceIt')
+from torchvision.transforms import Compose, CenterCrop, ToTensor, Resize, ToPILImage, Normalize
 from torch.utils import data
 import os
-
 from PIL import Image, ImageFilter
-
 from src.constants import *
 
 
@@ -32,11 +32,10 @@ class FolderData(data.Dataset):
 
         prediction = load_img(self.files[index])
         target = prediction.copy()
-        prediction = prediction.filter(ImageFilter.GaussianBlur(2))
 
+        # prediction = prediction.filter(ImageFilter.GaussianBlur(2))
         prediction = self.input_transform(prediction)
         target = self.target_transform(target)
-
         return prediction, target
 
     def __len__(self):
@@ -60,14 +59,10 @@ def get_testing_set(root, crop_size, upscale_factor):
 
 def input_transform(crop_size):
     return Compose([
-
         CenterCrop(crop_size),
         Resize(crop_size//UPSCALE_FACTOR,interpolation=Image.BICUBIC),
-
         ToTensor(),
-
     ])
-
 
 def get_target_transforms(crop_size):
     return Compose([

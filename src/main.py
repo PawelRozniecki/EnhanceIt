@@ -19,12 +19,14 @@ def main():
     model.to(DEVICE)
     model.load_state_dict(torch.load(MODEL_SAVE_PATH))
 
+
     model.eval()
     # image to resize
     # for file in os.listdir('/home/pawel/PycharmProjects/EnhanceIt/src/images/1'):
 
     input_image = Image.open(path)
-    # input_image = input_image.convert('YCbCr')
+
+    input_image = input_image.convert('RGB')
     # input_image = input_image.resize((int(input_image.size[0]*UPSCALE_FACTOR), int(input_image.size[1]*UPSCALE_FACTOR)), Image.BICUBIC)
     # bicubic = input_image.convert('RGB')
     # bicubic.save('bicubic.png')
@@ -39,7 +41,7 @@ def main():
     with torch.no_grad():
         output = model(input)
 
-    out_img = transforms.ToPILImage()(output[0].data.cpu())
+    # out_img = transforms.ToPILImage()(output[0].data.cpu())
 
     # output = output.cpu()
     #
@@ -48,7 +50,13 @@ def main():
     # out_img_y = out_img_y.clip(0, 255)
     # out_img_y = Image.fromarray(np.uint8(out_img_y[0]), mode='L')
     # out_img = Image.merge('YCbCr', [out_img_y, cb, cr]).convert('RGB')
-    out_img.save('output.png')
+    # out_img.save('output.png')
+
+    output = output.cpu()
+
+    out_img = transforms.ToPILImage()(output[0].data.cpu())
+
+    out_img.save('output1.png')
 
     print("saved sucesfully ")
 
