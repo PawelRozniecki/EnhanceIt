@@ -1,5 +1,5 @@
 import sys
-sys.path.append('~/EnhanceIt')
+sys.path.append('/home/pawel/PycharmProjects/EnhanceIt')
 
 
 import torch
@@ -25,7 +25,7 @@ model = Generator(UPSCALE_FACTOR)
 model.to(DEVICE)
 
 print("MODEL INFORMATION\n", model)
-print("initiating SRCNN training... ")
+print("initiating  training... ")
 
 # dataset = ImageFolder(DATASET_PATH, transform=transforms.ToTensor())
 # train_set = get_training_set(UPSCALE_FACTOR)
@@ -39,8 +39,13 @@ dataset = ImageFolder(DATASET_PATH)
 data_loader = DataLoader(get_training_set(DATASET_PATH, SIZE, UPSCALE_FACTOR), batch_size=BATCH_SIZE, shuffle=True)
 test_loader = DataLoader(get_testing_set(TEST_DATAPATH,SIZE, UPSCALE_FACTOR), batch_size=1, shuffle=False)
 
+
 criterion = nn.MSELoss()
+
 optimizer = optim.Adam(model.parameters())
+#
+# for param in model.parameters():
+#     param.requires_grad = True
 
 best_weight = copy.deepcopy(model.state_dict())
 
@@ -49,7 +54,6 @@ model.train()
 for epoch in range(EPOCHS):
 
     epoch_loss = 0.0
-
     best_psnr = 0.0
 
     for index, data in enumerate(tqdm(data_loader)):
@@ -57,7 +61,6 @@ for epoch in range(EPOCHS):
 
         running_corrects = 0
         batch, target = data
-        print(batch.shape, target.shape)
 
         batch = batch.to(DEVICE)
         target = target.to(DEVICE)
@@ -92,7 +95,7 @@ for epoch in range(EPOCHS):
             torch.save(best_weight, MODEL_SAVE_PATH)
 
         # print('best epoch: {}, psnr: {:.2f}'.format(best_epoch, best_psnr/len(test_loader)))
-        torch.save(best_weight, '/Users/pingwin/PycharmProjects/EnhanceIt/src/models/bestSRGAN.pth')
+        torch.save(best_weight, '/home/pawel/PycharmProjects/EnhanceIt/src/models/bestSRGAN.pth')
 
 
 

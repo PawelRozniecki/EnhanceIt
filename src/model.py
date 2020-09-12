@@ -4,6 +4,13 @@ import math
 
 import torch.nn.functional as F
 
+class Discriminator(nn.Module):
+    def __init__(self):
+        super(Discriminator,self).__init__()
+        self.conv1 = nn.Conv2d(3, 64, kernel_size=9, git pupadding=4)
+        self.leakyRelu = nn.LeakyReLU()
+
+
 class Generator(nn.Module):
     def __init__(self, upscale_factor):
         upsample_block_num = int(math.log(upscale_factor, 2))

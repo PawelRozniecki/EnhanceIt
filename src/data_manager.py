@@ -33,6 +33,7 @@ class FolderData(data.Dataset):
         prediction = load_img(self.files[index])
         target = prediction.copy()
         prediction = prediction.filter(ImageFilter.GaussianBlur(2))
+
         prediction = self.input_transform(prediction)
         target = self.target_transform(target)
 
