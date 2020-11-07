@@ -53,14 +53,13 @@ def get_training_set(root, crop_size, upscale_factor):
 def get_testing_set(root,crop_size,upscale_factor):
    return FolderData(root_dir=root,  crop_size=crop_size)
 
-def get_testing_set(root, crop_size, upscale_factor):
-    return FolderData(root_dir=root, crop_size=crop_size)
+
 
 
 def input_transform(crop_size):
     return Compose([
         CenterCrop(crop_size),
-        Resize(crop_size//UPSCALE_FACTOR,interpolation=Image.BICUBIC),
+        Resize(crop_size//UPSCALE_FACTOR, interpolation=Image.BICUBIC),
         ToTensor(),
     ])
 
