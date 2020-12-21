@@ -176,7 +176,7 @@ class Discriminator(nn.Module):
             nn.Conv2d(512, 1024, kernel_size=1),
             nn.LeakyReLU(0.2),
             nn.Conv2d(1024, 1, kernel_size=1),
-            nn.Dropout2d(0.3)
+            # nn.Dropout2d(0.3)
 
         )
 
@@ -249,7 +249,7 @@ class ARCNN(nn.Module):
     def __init__(self):
         super(ARCNN, self).__init__()
         self.base = nn.Sequential(
-            nn.Conv2d(3, 64, kernel_size=9, padding=4),
+            nn.Conv2d(3, 64, kernel_size=9, padding=4, stride=1),
             nn.PReLU(),
             nn.Conv2d(64, 32, kernel_size=7, padding=3),
             nn.PReLU(),

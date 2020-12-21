@@ -3,6 +3,7 @@ import sys
 sys.path.append('/home/pawel/PycharmProjects/EnhanceIt')
 import torch
 
+
 from PIL import Image, ImageFilter
 import numpy as np
 from torch.autograd import Variable
@@ -21,7 +22,7 @@ def main():
 
     # for file in tqdm(os.listdir(path)):
     #
-    #     input_image = Image.open(path+file)
+    #     input_image = Image.open(path+file).convert('RGB')
 
     input_image = Image.open(path).convert('RGB')
 
@@ -38,7 +39,7 @@ def main():
 
     output = output.cpu()
     out_img = transforms.ToPILImage()(output[0].data.cpu())
-    out_img.save('/home/pawel/PycharmProjects/EnhanceIt/src/result/out2.png')
+    out_img.save('/home/pawel/PycharmProjects/EnhanceIt/src/result/output2.png')
 
 
 main()
