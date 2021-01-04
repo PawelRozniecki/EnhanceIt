@@ -23,17 +23,15 @@ from src.model import SRCNN, Generator, Discriminator
 
 torch.autograd.set_detect_anomaly(True)
 import torchvision.transforms as transforms
-
+import numpy as np
 import torch.optim as optim
 
 generator = Generator(UPSCALE_FACTOR)
 
 discriminatorNet = Discriminator()
 # uncomment to load model from checkpoint
-# generator.load_state_dict(torch.load(MODEL_SAVE_PATH, map_location=DEVICE))
-
-
-# discriminatorNet.state_dict(torch.load('/home/pawel/PycharmProjects/EnhanceIt/src/models/discriminatorModel.pth'))
+generator.load_state_dict(torch.load('/home/pawel/PycharmProjects/EnhanceIt/src/models/checkpoints/cp358.pth', map_location=DEVICE))
+discriminatorNet.state_dict(torch.load('/home/pawel/PycharmProjects/EnhanceIt/src/models/checkpoints/dis32px.pth'))
 
 
 print("Generator INFORMATION\n", generator)
@@ -45,8 +43,8 @@ train_set = TrainDatasetFromFolder(DATASET_PATH, crop_size=SIZE, upscale_factor=
 val_set = ValidateDatasetFromFolder(TEST_DATAPATH, crop_size=SIZE, upscale_factor=UPSCALE_FACTOR)
 
 train_loader = DataLoader(get_training_set(DATASET_PATH, SIZE, UPSCALE_FACTOR), batch_size=BATCH_SIZE, shuffle=True,
-                          num_workers=16)
-val_loader = DataLoader(get_val_set(TEST_DATAPATH, SIZE, UPSCALE_FACTOR), batch_size=1, shuffle=False, num_workers=16)
+                          num_workers=1)
+val_loader = DataLoader(get_val_set(TEST_DATAPATH, SIZE, UPSCALE_FACTOR), batch_size=1, shuffle=False, num_workers=1)
 
 criterion = GeneratorLoss()
 
@@ -60,10 +58,15 @@ discriminatorOptim = optim.Adam(discriminatorNet.parameters(), lr=1e-4)
 
 best_epoch = 0
 best_psnr = 0.0
+epoch_arr = np.empty(0)
+loss_arr = np.empty(0)
+gscr_arr = np.empty(0)
+dscr_arr = np.empty(0)
 
 results = {'gen_loss': [], 'dis_loss': [], 'd_score': [], 'g_score': [], 'psnr': []}
 
 for epoch in range(EPOCHS):
+    epoch_arr = np.append(epoch_arr, epoch)
     generator_loss = 0.0
     avg_psnr = 0.0
     loss = 0
@@ -105,7 +108,7 @@ for epoch in range(EPOCHS):
         loss = criterion(fake_data, real_data)
 
         loss.backward()
-        fake_img = generator(fake_data)
+        fake_img = generator(batch_data)
         restored = transforms.ToPILImage()(fake_img[0].data.cpu())
         restored.save('/home/pawel/PycharmProjects/EnhanceIt/src/result/restored' + str(epoch) + '.png')
         optimizer.step()
@@ -148,13 +151,17 @@ for epoch in range(EPOCHS):
             print('best epoch: {}, psnr: {:.2f}'.format(best_epoch, best_psnr))
             torch.save(generator.state_dict(), MODEL_SAVE_PATH)
             torch.save(discriminatorNet.state_dict(),
-                       '/home/pawel/PycharmProjects/EnhanceIt/src/models/discriminatorModel.pth')
+                       DIS_PATH)
 
         results['dis_loss'].append(runtime_results['dis_loss'])
         results['gen_loss'].append(runtime_results['gen_loss'])
         results['psnr'].append(validation_results['psnr'])
         results['d_score'].append(runtime_results['d_score'])
         results['g_score'].append(runtime_results['g_score'])
+        loss_arr = np.append(loss_arr, generator_loss)
+        dscr_arr = np.append(dscr_arr, runtime_results['d_score'])
+        gscr_arr = np.append(gscr_arr, runtime_results['g_score'])
+
 
         csv_path = '/home/pawel/PycharmProjects/EnhanceIt/src/statistics/'
         data_frame = pd.DataFrame(
@@ -163,5 +170,13 @@ for epoch in range(EPOCHS):
                   'D_Score': results['d_score'], 'PSNR': results['psnr']},
             index=range(0, epoch + 1))
         data_frame.to_csv(csv_path + 'training_results.csv', index_label='Epoch')
+
+        plt.subplot(2, 1, 1)
+        plt.plot(epoch_arr, loss_arr, label="generator loss")
+        plt.subplot(2, 1, 2)
+        plt.plot(epoch_arr, dscr_arr, label="discriminator score ")
+        plt.plot(epoch_arr, gscr_arr, label="generator score")
+        plt.savefig('plots.png')
+plt.show()
 
 

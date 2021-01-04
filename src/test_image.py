@@ -12,20 +12,17 @@ import torchvision.transforms as transforms
 from src.model import Generator, SRCNN
 import os
 from src.constants import *
+from src.data_utils import extract_filename
 from tqdm import tqdm
 
 
 def main():
-    torch.cuda.empty_cache()
-    print(DEVICE)
     path = sys.argv[1]
 
-    # for file in tqdm(os.listdir(path)):
-    #
-    #     input_image = Image.open(path+file).convert('RGB')
-
+    torch.cuda.empty_cache()
+    print(DEVICE)
+    filename = extract_filename(path)
     input_image = Image.open(path).convert('RGB')
-
     input = Variable(transforms.ToTensor()(input_image)).unsqueeze(0)
     input = input.cuda()
 
@@ -39,7 +36,6 @@ def main():
 
     output = output.cpu()
     out_img = transforms.ToPILImage()(output[0].data.cpu())
-    out_img.save('/home/pawel/PycharmProjects/EnhanceIt/src/result/output2.png')
-
+    out_img.save(ENHANCED_IMG_DIR + filename + "_x2.png")
 
 main()

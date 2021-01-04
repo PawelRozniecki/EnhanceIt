@@ -2,12 +2,11 @@ from src.constants import *
 import os
 import random
 from torchvision.transforms import Compose, CenterCrop, ToTensor, Resize, ToPILImage, Normalize, RandomCrop
-from PIL import Image
+from PIL import Image, ImageFilter
 import PIL
 import numpy as np
 import io
 from torch.utils.data.dataset import Dataset
-from PIL import Image, ImageFilter
 
 from tqdm import tqdm
 
@@ -22,8 +21,16 @@ def get_images(root_dir):
     return images
 
 
+
+
+def extract_filename(path):
+
+    base = os.path.basename(path)
+    filename = os.path.splitext(base)[0]
+    return filename
+
 def load_img(filepath):
-    img = Image.open(filepath).convert('RGB')
+    img = Image.open(filepath)
     return img
 
 
@@ -41,6 +48,7 @@ def high_res_transform(crop_size):
 def low_res_transform(crop_size, upscale_factor):
     return Compose([
         ToPILImage(),
+
         Resize(crop_size // upscale_factor, interpolation=Image.BICUBIC),
         ToTensor()
     ])
@@ -84,11 +92,11 @@ class ValidateDatasetFromFolder(Dataset):
         hr_image = load_img(self.files[index])
         width, height = hr_image.size
         crop_size = crop_image(min(width, height), self.upscale_factor)
+
         lr_scale = Resize(crop_size // self.upscale_factor, interpolation=Image.BICUBIC)
         hr_scale = Resize(crop_size, interpolation=Image.BICUBIC)
         hr_image = CenterCrop(crop_size)(hr_image)
         lr_image = lr_scale(hr_image)
-
         hr_restore = hr_scale(lr_image)
         return ToTensor()(lr_image), ToTensor()(hr_restore), ToTensor()(hr_image)
 
@@ -97,31 +105,32 @@ class ValidateDatasetFromFolder(Dataset):
 
 
 class CompressDatasetImages(Dataset):
-    def __init__(self, dataset_path):
+    def __init__(self, dataset_path, q):
         super(CompressDatasetImages, self).__init__()
         self.files = get_images(dataset_path)
         self.dataset_path = dataset_path
+        self.q = q
 
     def __getitem__(self, index):
         img_to_compress = load_img(self.files[index]).convert('RGB')
 
-        if random.random() <= 0.1:
+        if random.random() <= 0.5:
             scale = random.choice([0.9, 0.8, 0.7, 0.6])
             img_to_compress = img_to_compress.resize((int(img_to_compress.width * scale),
                                                       int(img_to_compress.height * scale)),
                                                      resample=Image.BICUBIC)
 
-        if random.random() <= 0.1:
+        if random.random() <= 0.5:
             img_to_compress = img_to_compress.rotate(random.choice([90, 180, 270]), expand=True)
 
-        crop_x = random.randint(0, img_to_compress.width - 24)
+        crop_x = random.randint(0, img_to_compress.width - 96)
 
-        crop_y = random.randint(0, img_to_compress.height - 24)
+        crop_y = random.randint(0, img_to_compress.height - 96)
 
-        img_to_compress = img_to_compress.crop((crop_x, crop_y, crop_x + 24, crop_y + 24))
+        img_to_compress = img_to_compress.crop((crop_x, crop_y, crop_x + 96, crop_y + 96))
 
         buffer = io.BytesIO()
-        img_to_compress.save(buffer, format='jpeg', quality=10)
+        img_to_compress.save(buffer, format='jpeg', quality=self.q)
         input = Image.open(buffer)
 
         input = np.array(input).astype(np.float32)
@@ -134,7 +143,6 @@ class CompressDatasetImages(Dataset):
         img_to_compress /= 255
 
         return input, img_to_compress
-
     def __len__(self):
         return len(self.files)
 
@@ -144,17 +152,19 @@ class CompressDatasetImages(Dataset):
         count = 0
         for index, image in enumerate(tqdm(dirs)):
             img = Image.open(path + image)
-            img.save("/home/pawel/PycharmProjects/EnhanceIt/src/compressed_dataset/Compressed_" + image,
+            img.save("/home/pawel/PycharmProjects/EnhanceIt/src/Datasets/BSDS500/compressed/Compressed_" + image,
                      format='jpeg',
                      Optimize=True,
-                     quality=10)
+                     quality=self.q)
 
     def test(self, path):
         image = Image.open(path)
         image.save("/home/pawel/PycharmProjects/EnhanceIt/src/compressed_dataset/Compressed.jpg")
 
 
-if __name__ == "__main__":
-    compression = CompressDatasetImages("/home/pawel/PycharmProjects/EnhanceIt/src/DIV2K/Train/X2/", 10)
 
-    compression.compress()
+
+# if __name__ == "__main__":
+#     compression = CompressDatasetImages("/home/pawel/PycharmProjects/EnhanceIt/src/Datasets/BSDS500/train/", 10)
+#
+#     compression.compress()

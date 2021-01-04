@@ -12,11 +12,11 @@ import os
 from tqdm import  tqdm
 
 
-def main():
+def remove_artifacts():
     path = sys.argv[1]
     model = ARCNN()
 
-    model.load_state_dict(torch.load('/home/pawel/PycharmProjects/EnhanceIt/src/models/ARCNN.pth', map_location='cpu'))
+    model.load_state_dict(torch.load('/home/pawel/PycharmProjects/EnhanceIt/src/models/arcnn/ARCNN203_loss: 0.002472760060036014.pth', map_location='cpu'))
     model.eval()
 
     # for file in tqdm(os.listdir(path)):
@@ -26,7 +26,7 @@ def main():
     # buffer = io.BytesIO()
     # input_image.save(buffer, format='jpeg', quality=10)
     # input_image = Image.open(buffer)
-    # input_image.save("compressd_image.png")
+    # input_image.save("/home/pawel/PycharmProjects/EnhanceIt/src/result/compressd_image.png")
     input_image = transforms.ToTensor()(input_image).unsqueeze(0)
 
     with torch.no_grad():
@@ -34,7 +34,8 @@ def main():
 
     output = output.mul(255.0).clamp(0.0, 255.0).squeeze(0).permute(1, 2, 0).byte().cpu().numpy()
     out_img = Image.fromarray(output, mode='RGB')
-    out_img.save('/home/pawel/PycharmProjects/EnhanceIt/src/result/res.png')
+    out_img.save(ENHANCED_IMG_DIR + "arcnn.png")
 
 
-main()
+remove_artifacts()
+
