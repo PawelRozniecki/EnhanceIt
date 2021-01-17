@@ -54,3 +54,10 @@ python3 App.py --path movie.mp4 --scale_factor 2 --arcnn False
 3. Upscales frames using SRGAN from extracted_frames folder, and saves them in *enhanced_frames* folder
 4. Upscales frames using *Bicubic interpolation* and saves them in bicubic_resampling folder
 5. Combines all of  the frames from  *enhanced_frames and Bicubic interpolation folders* into a video. Bicubic and SRGAN enhanced videos are saved as **out.mp4** in those folders 
+
+
+## Results
+
+[Bicubic ](bicubic.png)
+[SRGAN](SRGAN.png)
+[Original](original)
