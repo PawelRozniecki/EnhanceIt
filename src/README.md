@@ -27,7 +27,7 @@ Network Paper](https://arxiv.org/abs/1609.04802)
 
 
 ## HOW TO 
-
+Download or git clone this repository and navigate to the project folder 
 In order to run video enhancement run **App.py**
 It takes 3 arguments:
 
