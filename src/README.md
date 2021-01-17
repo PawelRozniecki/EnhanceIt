@@ -8,7 +8,7 @@ The goal of this project is to Upscale any video to a higher resulution using a 
 - PyTorch
 - OpenCV 
 - FFMPEG
-- Prefarably NVIDIA CUDA enabled GPU 
+- Preferably NVIDIA CUDA enabled GPU 
 
 ```
 pip3 install torch torchvision torchaudio
