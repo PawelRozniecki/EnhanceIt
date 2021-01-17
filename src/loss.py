@@ -45,7 +45,7 @@ class TotalVarLoss(nn.Module):
     def tensor_size(t):
         return t.size()[1] * t.size()[2]
 
-
-if __name__ == "__main__":
-    g_loss = GeneratorLoss()
-    print(g_loss)
+#
+# if __name__ == "__main__":
+#     g_loss = GeneratorLoss()
+#     print(g_loss)

@@ -30,8 +30,8 @@ generator = Generator(UPSCALE_FACTOR)
 
 discriminatorNet = Discriminator()
 # uncomment to load model from checkpoint
-generator.load_state_dict(torch.load('/home/pawel/PycharmProjects/EnhanceIt/src/models/checkpoints/cp358.pth', map_location=DEVICE))
-discriminatorNet.state_dict(torch.load('/home/pawel/PycharmProjects/EnhanceIt/src/models/checkpoints/dis32px.pth'))
+generator.load_state_dict(torch.load('/home/pawel/PycharmProjects/EnhanceIt/src/models/testSrgan/cp/cp196.pth', map_location=DEVICE))
+discriminatorNet.state_dict(torch.load('/home/pawel/PycharmProjects/EnhanceIt/src/models/testSrgan/disTest.pth'))
 
 
 print("Generator INFORMATION\n", generator)
@@ -43,7 +43,7 @@ train_set = TrainDatasetFromFolder(DATASET_PATH, crop_size=SIZE, upscale_factor=
 val_set = ValidateDatasetFromFolder(TEST_DATAPATH, crop_size=SIZE, upscale_factor=UPSCALE_FACTOR)
 
 train_loader = DataLoader(get_training_set(DATASET_PATH, SIZE, UPSCALE_FACTOR), batch_size=BATCH_SIZE, shuffle=True,
-                          num_workers=1)
+                          num_workers=2)
 val_loader = DataLoader(get_val_set(TEST_DATAPATH, SIZE, UPSCALE_FACTOR), batch_size=1, shuffle=False, num_workers=1)
 
 criterion = GeneratorLoss()
@@ -52,8 +52,10 @@ generator.cuda()
 discriminatorNet.cuda()
 criterion.cuda()
 
-# optimizers
+
+
 optimizer = optim.Adam(generator.parameters(), lr=1e-4)
+
 discriminatorOptim = optim.Adam(discriminatorNet.parameters(), lr=1e-4)
 
 best_epoch = 0
@@ -95,7 +97,7 @@ for epoch in range(EPOCHS):
         real_output = discriminatorNet(real_data).mean()
         fake_output = discriminatorNet(fake_data).mean()
         discriminator_loss = 1 - real_output + fake_output
-        discriminator_loss = discriminator_loss.mean()
+        # discriminator_loss = discriminator_loss.mean()
         discriminator_loss.backward(retain_graph=True)
         discriminatorOptim.step()
 
@@ -108,9 +110,13 @@ for epoch in range(EPOCHS):
         loss = criterion(fake_data, real_data)
 
         loss.backward()
+
         fake_img = generator(batch_data)
-        restored = transforms.ToPILImage()(fake_img[0].data.cpu())
-        restored.save('/home/pawel/PycharmProjects/EnhanceIt/src/result/restored' + str(epoch) + '.png')
+        fake_output = discriminatorNet(fake_img).mean()
+        # out_img = transforms.ToPILImage()(fake_img[0].data.cpu())
+        # out_img.save('/home/pawel/PycharmProjects/EnhanceIt/src/result/restored' + str(epoch) + '.png')
+
+
         optimizer.step()
 
         generator_loss += loss.item() / len(train_loader)
@@ -123,7 +129,7 @@ for epoch in range(EPOCHS):
     # torch.save(generator.state_dict(), MODEL_SAVE_PATH)
 
     generator.eval()
-    discriminatorNet.eval()
+    # discriminatorNet.eval()
 
     with torch.no_grad():
         validation_results = {'psnr': 0, 'mse': 0}
@@ -131,6 +137,8 @@ for epoch in range(EPOCHS):
             test_image, test_label = d[0].to(DEVICE), d[1].to(DEVICE)
 
             predication = generator(test_image)
+            restored = transforms.ToPILImage()(predication[0].data.cpu())
+            restored.save('/home/pawel/PycharmProjects/EnhanceIt/src/result/val' + str(epoch) + '.png')
             loss = criterion(predication, test_label)
             psnr = 10 * log10(1 / loss.item())
             avg_psnr += psnr
@@ -140,7 +148,7 @@ for epoch in range(EPOCHS):
         validation_results['psnr'] = final_psnr
 
         torch.save(generator.state_dict(),
-                   '/home/pawel/PycharmProjects/EnhanceIt/src/models/checkpoints/cp' + str(epoch) + ".pth")
+                   '/home/pawel/PycharmProjects/EnhanceIt/src/models/testSrgan/cp/cp' + str(epoch) + ".pth")
 
         if avg_psnr / len(val_loader) > best_psnr:
             best_epoch = epoch
@@ -161,7 +169,6 @@ for epoch in range(EPOCHS):
         loss_arr = np.append(loss_arr, generator_loss)
         dscr_arr = np.append(dscr_arr, runtime_results['d_score'])
         gscr_arr = np.append(gscr_arr, runtime_results['g_score'])
-
 
         csv_path = '/home/pawel/PycharmProjects/EnhanceIt/src/statistics/'
         data_frame = pd.DataFrame(

@@ -14,28 +14,28 @@ import os
 from src.constants import *
 from src.data_utils import extract_filename
 from tqdm import tqdm
-
+from  torchvision.transforms import  ToTensor, ToPILImage
+from src.BicubicInterpolation import bicubic_resize
 
 def main():
+    print(DEVICE)
     path = sys.argv[1]
-
+    # bicubic_resize(path)
     torch.cuda.empty_cache()
     print(DEVICE)
     filename = extract_filename(path)
     input_image = Image.open(path).convert('RGB')
     input = Variable(transforms.ToTensor()(input_image)).unsqueeze(0)
-    input = input.cuda()
+    # input = Variable(ToTensor()(input_image)).unsqueeze(0)
+    # input = input.to(DEVICE)
 
-    model = Generator(UPSCALE_FACTOR)
-    model.to(DEVICE)
-    model.load_state_dict(torch.load(MODEL_SAVE_PATH))
-    model.eval()
+    model = Generator(2).eval()
+    model.load_state_dict(torch.load(MODEL_X2_DIR, map_location='cpu'))
 
+    # model.to(DEVICE)
     with torch.no_grad():
         output = model(input)
-
-    output = output.cpu()
-    out_img = transforms.ToPILImage()(output[0].data.cpu())
-    out_img.save(ENHANCED_IMG_DIR + filename + "_x2.png")
+        out_img = transforms.ToPILImage()(output[0].data.cpu())
+        out_img.save(ENHANCED_IMG_DIR + filename + "_x4.png")
 
 main()

@@ -89,7 +89,7 @@ def Upscale_Block(nf, scale = 2):
     block = []
     for _ in range(scale//2):
         block+= [
-            nn.Conv2d(nf,nf * (2**2), 1),
+            nn.Conv2d(nf, nf * (2**2), 1),
             nn.PixelShuffle(2),
             nn.ReLU()
         ]
@@ -118,7 +118,7 @@ class Generator(nn.Module):
         self.block6 = ResidualBlock(64)
         self.block7 = nn.Sequential(
             nn.Conv2d(64, 64, kernel_size=3, padding=1),
-            nn.BatchNorm2d(64, 0.8)
+            nn.BatchNorm2d(64)
         )
         block8 = [UpsamplingBlock(64, 2) for _ in range(upsample_block_num)]
         block8.append(nn.Conv2d(64, 3, kernel_size=9, padding=4))
@@ -181,8 +181,9 @@ class Discriminator(nn.Module):
         )
 
     def forward(self, x):
-        batch_size = x.size(0)
-        return torch.sigmoid(self.net(x).view(batch_size))
+        result = self.net(x).view(x.size(0))
+        sig = torch.sigmoid(result)
+        return sig
 
 
 class ResidualBlock(nn.Module):
@@ -243,6 +244,7 @@ class SRCNN(nn.Module):
 # --------------ARCNN MODEL---------------
 # ------Used for artifact reduction-------
 # ----------------------------------------
+#By learning the ARCNN (9–7–1–5) first, then keep the first two layers.
 
 
 class ARCNN(nn.Module):
@@ -257,6 +259,34 @@ class ARCNN(nn.Module):
             nn.PReLU()
         )
         self.last = nn.Conv2d(16, 3, kernel_size=5, padding=2)
+        # self._initialize_weights()
+
+    def _initialize_weights(self):
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                nn.init.normal_(m.weight, std=0.001)
+
+    def forward(self, x):
+        x = self.base(x)
+        x = self.last(x)
+        return x
+
+
+class FastARCNN(nn.Module):
+    def __init__(self):
+        super(FastARCNN, self).__init__()
+        self.base = nn.Sequential(
+            nn.Conv2d(3, 64, kernel_size=9, padding=4, stride=2),
+            nn.PReLU(),
+            nn.Conv2d(64, 32, kernel_size=1),
+            nn.PReLU(),
+            nn.Conv2d(32, 32, kernel_size=7,padding=3),
+            nn.PReLU(),
+            nn.Conv2d(32, 64, kernel_size=1),
+            nn.PReLU()
+
+        )
+        self.last = nn.ConvTranspose2d(64,3,kernel_size=9, stride=2, padding=4,output_padding=1)
         # self._initialize_weights()
 
     def _initialize_weights(self):

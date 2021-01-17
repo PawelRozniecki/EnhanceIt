@@ -1,7 +1,7 @@
 from src.constants import *
 import os
 import random
-from torchvision.transforms import Compose, CenterCrop, ToTensor, Resize, ToPILImage, Normalize, RandomCrop
+from torchvision.transforms import Compose, CenterCrop, ToTensor, Resize, ToPILImage, RandomCrop, GaussianBlur
 from PIL import Image, ImageFilter
 import PIL
 import numpy as np
@@ -44,11 +44,15 @@ def high_res_transform(crop_size):
         ToTensor()
     ])
 
+def set_required_grad(net, requires_grad = False):
+    for param in net.parameters():
+        param.requires_grad = requires_grad
+
 
 def low_res_transform(crop_size, upscale_factor):
     return Compose([
         ToPILImage(),
-
+        # GaussianBlur(kernel_size=1, sigma=0.0),
         Resize(crop_size // upscale_factor, interpolation=Image.BICUBIC),
         ToTensor()
     ])
@@ -120,14 +124,14 @@ class CompressDatasetImages(Dataset):
                                                       int(img_to_compress.height * scale)),
                                                      resample=Image.BICUBIC)
 
-        if random.random() <= 0.5:
-            img_to_compress = img_to_compress.rotate(random.choice([90, 180, 270]), expand=True)
+        # if random.random() <= 0.5:
+        #     img_to_compress = img_to_compress.rotate(random.choice([90, 180, 270]), expand=True)
 
-        crop_x = random.randint(0, img_to_compress.width - 96)
+        crop_x = random.randint(0, img_to_compress.width - 24)
 
-        crop_y = random.randint(0, img_to_compress.height - 96)
+        crop_y = random.randint(0, img_to_compress.height - 24)
 
-        img_to_compress = img_to_compress.crop((crop_x, crop_y, crop_x + 96, crop_y + 96))
+        img_to_compress = img_to_compress.crop((crop_x, crop_y, crop_x + 24, crop_y + 24))
 
         buffer = io.BytesIO()
         img_to_compress.save(buffer, format='jpeg', quality=self.q)
@@ -139,8 +143,8 @@ class CompressDatasetImages(Dataset):
         input = np.transpose(input, axes=[2, 0, 1])
         img_to_compress = np.transpose(img_to_compress, axes=[2, 0, 1])
 
-        input /= 255
-        img_to_compress /= 255
+        input /= 255.0
+        img_to_compress /= 255.0
 
         return input, img_to_compress
     def __len__(self):

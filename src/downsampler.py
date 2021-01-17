@@ -11,14 +11,15 @@ import numpy as np
 import io
 from torch.utils.data.dataset import Dataset
 
-parser = argparse.ArgumentParser()
+parser = argparse.ArgumentParser(description='Enter file name output name and output width')
 parser.add_argument('--file', type=str, required=True)
 parser.add_argument('--out' , type=str, required=True)
+parser.add_argument('--w', type=int)
 
 def downsample():
     args = parser.parse_args()
 
-    os.system('ffmpeg -i {} -vf scale=iw/2:-1 {}.mp4'.format(args.file,args.out))
+    os.system('ffmpeg -i {} -vf scale={}:-1 {}.mp4'.format(args.file,args.w,args.out))
 
 
 
