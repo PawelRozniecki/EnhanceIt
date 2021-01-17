@@ -31,9 +31,9 @@ Network Paper](https://arxiv.org/abs/1609.04802)
 - In order to run video enhancement run **App.py**
 It takes 3 arguments:
 
--  --path: path to a video you want to enhance
--  --scale_factor: An upscaling factor. Choice between 2 and 4. Default one is 4 
--  --arcnn: Bool Check to true, to remove compression artifacts from a video first 
+  - --path: path to a video you want to enhance
+  -  --scale_factor: An upscaling factor. Choice between 2 and 4. Default one is 4 
+  -  --arcnn: Bool Check to true, to remove compression artifacts from a video first 
 
 ```
 
