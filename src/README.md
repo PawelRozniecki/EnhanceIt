@@ -58,6 +58,7 @@ python3 App.py --path movie.mp4 --scale_factor 2 --arcnn False
 
 ## Results
 
+![Example](example.png)
 ![Bicubic ](bicubic.png)
 ![SRGAN](SRGAN.png)
 ![Original](original.png)
