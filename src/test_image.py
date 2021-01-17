@@ -1,6 +1,6 @@
 import sys
 
-sys.path.append('/home/pawel/PycharmProjects/EnhanceIt')
+sys.path.append('/Users/pingwin/PycharmProjects/EnhanceIt/')
 import torch
 
 
@@ -17,18 +17,18 @@ from tqdm import tqdm
 
 
 def main():
-    path = sys.argv[1]
 
-    torch.cuda.empty_cache()
+    # torch.cuda.empty_cache()
     print(DEVICE)
-    filename = extract_filename(path)
+
+    path = sys.argv[1]
     input_image = Image.open(path).convert('RGB')
     input = Variable(transforms.ToTensor()(input_image)).unsqueeze(0)
-    input = input.cuda()
+    # input = input.cuda()
 
     model = Generator(UPSCALE_FACTOR)
-    model.to(DEVICE)
-    model.load_state_dict(torch.load(MODEL_SAVE_PATH))
+    # model.to(DEVICE)
+    model.load_state_dict(torch.load(MODEL_SAVE_PATH, map_location='cpu'))
     model.eval()
 
     with torch.no_grad():
@@ -36,6 +36,7 @@ def main():
 
     output = output.cpu()
     out_img = transforms.ToPILImage()(output[0].data.cpu())
-    out_img.save(ENHANCED_IMG_DIR + filename + "_x2.png")
+    out_img.save('/Users/pingwin/PycharmProjects/EnhanceIt/src/frontend/savename3.png')
+    print("Done!")
 
 main()

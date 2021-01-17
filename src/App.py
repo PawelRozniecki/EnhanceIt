@@ -47,5 +47,3 @@ def run():
     # assemble()
 
 
-if __name__ == '__main__':
-    run()

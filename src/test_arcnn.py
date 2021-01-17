@@ -1,6 +1,6 @@
 import sys
 
-sys.path.append('/home/pawel/PycharmProjects/EnhanceIt')
+sys.path.append('/Users/pingwin/PycharmProjects/EnhanceIt/')
 import torch
 from PIL import Image
 from src.model import ARCNN
@@ -16,7 +16,7 @@ def remove_artifacts():
     path = sys.argv[1]
     model = ARCNN()
 
-    model.load_state_dict(torch.load('/home/pawel/PycharmProjects/EnhanceIt/src/models/arcnn/ARCNN203_loss: 0.002472760060036014.pth', map_location='cpu'))
+    model.load_state_dict(torch.load('/Users/pingwin/PycharmProjects/EnhanceIt/src/ARCNN203_loss_ 0.002472760060036014.pth', map_location='cpu'))
     model.eval()
 
     # for file in tqdm(os.listdir(path)):
@@ -34,7 +34,7 @@ def remove_artifacts():
 
     output = output.mul(255.0).clamp(0.0, 255.0).squeeze(0).permute(1, 2, 0).byte().cpu().numpy()
     out_img = Image.fromarray(output, mode='RGB')
-    out_img.save(ENHANCED_IMG_DIR + "arcnn.png")
+    out_img.save("arcnn.png")
 
 
 remove_artifacts()
