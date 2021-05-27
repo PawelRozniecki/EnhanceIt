@@ -16,7 +16,7 @@ def assemble(path):
     try:
 
         os.chdir(path)
-        os.system('ffmpeg -r 25 -f image2 -s 2560x1440 -i frame%d.png -vcodec libx264 -crf 25  -pix_fmt yuv420p .mp4 output.mp4')
+        os.system('e')
     except OSError as err:
         print(err)
 

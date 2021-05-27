@@ -1,6 +1,6 @@
 import sys
 
-sys.path.append('/home/pawel/PycharmProjects/EnhanceIt')
+sys.path.append('/run/timeshift/backup/thesis/EnhanceIt')
 from PIL import Image, ImageFilter
 from src.constants import *
 from tqdm import tqdm
@@ -15,3 +15,4 @@ def bicubic_resize(path,scale):
                                          resample=Image.BICUBIC)
 
         input_image.save(BICUBIC_FRAMES_DIR + file)
+# bicubic_resize("/run/timeshift/backup/thesis/EnhanceIt/src/extracted_frames/",4)

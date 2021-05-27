@@ -1,6 +1,6 @@
 import sys
 
-sys.path.append('/home/pawel/PycharmProjects/EnhanceIt')
+sys.path.append('/run/timeshift/backup/thesis/EnhanceIt')
 import cv2
 import sys
 import os
@@ -17,7 +17,7 @@ class FrameExtractor:
         self.path = path
 
     def extract(self):
-        # path = sys.argv[1]
+        # self.path = sys.argv[1]
 
         dirname = extract_filename(self.path)
         print(dirname)
@@ -39,7 +39,7 @@ class FrameExtractor:
             count = 0
             while success:
                 for count in tqdm(range(total)):
-                    cv2.imwrite("/home/pawel/PycharmProjects/EnhanceIt/src/extracted_frames/frame%d.png" % count,
+                    cv2.imwrite("../src/extracted_frames/frame%d.png" % count,
                                 image)  # save frame as jpeg  file
                     success, image = video_capture.read()
                     # print("new frame: ", success)
@@ -81,3 +81,5 @@ class FrameExtractor:
 #
 #
 # main()
+if __name__ == '__main__':
+    FrameExtractor("/run/timeshift/backup/thesis/EnhanceIt/src/video_clips/360.mp4").extract()

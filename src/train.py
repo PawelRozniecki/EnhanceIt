@@ -1,6 +1,6 @@
 import sys
 
-sys.path.append('/home/pawel/PycharmProjects/EnhanceIt')
+sys.path.append('/run/timeshift/backup/thesis/EnhanceIt')
 import torch
 import matplotlib.pyplot as plt
 import torchvision
@@ -25,13 +25,13 @@ torch.autograd.set_detect_anomaly(True)
 import torchvision.transforms as transforms
 import numpy as np
 import torch.optim as optim
-
+from src.benchmarks import ssim
 generator = Generator(UPSCALE_FACTOR)
 
 discriminatorNet = Discriminator()
 # uncomment to load model from checkpoint
-generator.load_state_dict(torch.load('/home/pawel/PycharmProjects/EnhanceIt/src/models/testSrgan/cp/cp196.pth', map_location=DEVICE))
-discriminatorNet.state_dict(torch.load('/home/pawel/PycharmProjects/EnhanceIt/src/models/testSrgan/disTest.pth'))
+# generator.load_state_dict(torch.load('/run/timeshift/backup/thesis/EnhanceIt/src/experiment_models/newdataset/cp999.pth', map_location=DEVICE))
+# discriminatorNet.state_dict(torch.load('/run/timeshift/backup/thesis/EnhanceIt/src/experiment_models/disTest.pth'))
 
 
 print("Generator INFORMATION\n", generator)
@@ -40,23 +40,20 @@ print("initiating SRCNN training... ")
 
 # dataset loaderds
 train_set = TrainDatasetFromFolder(DATASET_PATH, crop_size=SIZE, upscale_factor=UPSCALE_FACTOR)
-val_set = ValidateDatasetFromFolder(TEST_DATAPATH, crop_size=SIZE, upscale_factor=UPSCALE_FACTOR)
+val_set = ValidateDatasetFromFolder(TEST_DATAPATH, upscale_factor=UPSCALE_FACTOR)
 
 train_loader = DataLoader(get_training_set(DATASET_PATH, SIZE, UPSCALE_FACTOR), batch_size=BATCH_SIZE, shuffle=True,
                           num_workers=2)
-val_loader = DataLoader(get_val_set(TEST_DATAPATH, SIZE, UPSCALE_FACTOR), batch_size=1, shuffle=False, num_workers=1)
+val_loader = DataLoader(get_val_set(TEST_DATAPATH, UPSCALE_FACTOR), batch_size=1, shuffle=False, num_workers=1)
+optimizer = optim.Adam(generator.parameters(), lr=1e-4)
 
+discriminatorOptim = optim.Adam(discriminatorNet.parameters(), lr=1e-4)
 criterion = GeneratorLoss()
 
 generator.cuda()
 discriminatorNet.cuda()
 criterion.cuda()
 
-
-
-optimizer = optim.Adam(generator.parameters(), lr=1e-4)
-
-discriminatorOptim = optim.Adam(discriminatorNet.parameters(), lr=1e-4)
 
 best_epoch = 0
 best_psnr = 0.0
@@ -80,44 +77,93 @@ for epoch in range(EPOCHS):
 
     for data, target in train_bar:
         batch_size = data.size(0)
-        # -----------------------------------------#
-        # --------------DISCRIMINATOR--------------#
-        # -----------------------------------------#
+
+        # generate real and fake data
 
         real_data = Variable(target).to(DEVICE)
         out_real = transforms.ToPILImage()(real_data[0].data.cpu())
-        out_real.save('/home/pawel/PycharmProjects/EnhanceIt/src/result/real' + str(epoch) + '.png')
-        batch_data = Variable(data).to(DEVICE)
+        out_real.save('/run/timeshift/backup/thesis/EnhanceIt/src/experiment_models/SRGAN_with_blur/results/real' + str(epoch) + '.png')
 
-        fake_data = generator(batch_data)
+        low_res_data = Variable(data).to(DEVICE)
+        fake_data = generator(low_res_data).to(DEVICE)
+
         out_img = transforms.ToPILImage()(fake_data[0].data.cpu())
-        out_img.save('/home/pawel/PycharmProjects/EnhanceIt/src/result/fake' + str(epoch) + '.png')
+        out_img.save('/run/timeshift/backup/thesis/EnhanceIt/src/experiment_models/SRGAN_with_blur/results/fake' + str(epoch) + '.png')
+
+        # Train discriminator
+
+        for p in discriminatorNet.parameters():
+            p.requires_grad = True
+
         discriminatorNet.zero_grad()
+
+        # calculate losses
 
         real_output = discriminatorNet(real_data).mean()
         fake_output = discriminatorNet(fake_data).mean()
         discriminator_loss = 1 - real_output + fake_output
-        # discriminator_loss = discriminator_loss.mean()
         discriminator_loss.backward(retain_graph=True)
         discriminatorOptim.step()
 
-        # -----------------------------------------#
-        # ---------------GENERATOR-----------------#
-        # -----------------------------------------#
+        # train generator
+
+        for p in discriminatorNet.parameters():
+            p.requires_grad = False
 
         generator.zero_grad()
-
         loss = criterion(fake_data, real_data)
 
-        loss.backward()
-
-        fake_img = generator(batch_data)
+        fake_img = generator(low_res_data)
         fake_output = discriminatorNet(fake_img).mean()
-        # out_img = transforms.ToPILImage()(fake_img[0].data.cpu())
-        # out_img.save('/home/pawel/PycharmProjects/EnhanceIt/src/result/restored' + str(epoch) + '.png')
 
-
+        loss.backward()
         optimizer.step()
+
+
+
+        # # -----------------------------------------#
+        # # --------------DISCRIMINATOR--------------#
+        # # -----------------------------------------#
+        #
+        # for p in discriminatorNet.parameters():
+        #     p.requires_grad = True
+        #
+        # real_data = Variable(target).to(DEVICE)
+        # out_real = transforms.ToPILImage()(real_data[0].data.cpu())
+        # out_real.save('/run/timeshift/backup/thesis/EnhanceIt/src/result/real' + str(epoch) + '.png')
+        # batch_data = Variable(data).to(DEVICE)
+        #
+        # fake_data = generator(batch_data)
+        # out_img = transforms.ToPILImage()(fake_data[0].data.cpu())
+        # out_img.save('/run/timeshift/backup/thesis/EnhanceIt/src/result/fake' + str(epoch) + '.png')
+        # discriminatorNet.zero_grad()
+        #
+        # real_output = discriminatorNet(real_data).mean()
+        # fake_output = discriminatorNet(fake_data).mean()
+        # discriminator_loss = 1 - real_output + fake_output
+        # # discriminator_loss = discriminator_loss.mean()
+        # discriminator_loss.backward(retain_graph=True)
+        # discriminatorOptim.step()
+        #
+        # # -----------------------------------------#
+        # # ---------------GENERATOR-----------------#
+        # # -----------------------------------------#
+        #
+        # for p in discriminatorNet.parameters():
+        #     p.requires_grad = False
+        #
+        # generator.zero_grad()
+        #
+        # loss = criterion(fake_data, real_data)
+        # loss.backward()
+        #
+        # fake_img = generator(batch_data)
+        # fake_output = discriminatorNet(fake_img).mean()
+        # # out_img = transforms.ToPILImage()(fake_img[0].data.cpu())
+        # # out_img.save('/home/pawel/PycharmProjects/EnhanceIt/src/result/restored' + str(epoch) + '.png')
+        #
+        #
+        # optimizer.step()
 
         generator_loss += loss.item() / len(train_loader)
         runtime_results['gen_loss'] = generator_loss
@@ -132,23 +178,25 @@ for epoch in range(EPOCHS):
     # discriminatorNet.eval()
 
     with torch.no_grad():
-        validation_results = {'psnr': 0, 'mse': 0}
+        validation_results = {'psnr': 0, 'mse': 0, 'ssim': 0}
         for i, d in enumerate(tqdm(val_loader, desc="testing progress")):
             test_image, test_label = d[0].to(DEVICE), d[1].to(DEVICE)
 
             predication = generator(test_image)
             restored = transforms.ToPILImage()(predication[0].data.cpu())
-            restored.save('/home/pawel/PycharmProjects/EnhanceIt/src/result/val' + str(epoch) + '.png')
+            restored.save('/run/timeshift/backup/thesis/EnhanceIt/src/experiment_models/SRGAN_with_blur/results/val' + str(epoch) + '.png')
             loss = criterion(predication, test_label)
+            batch_ssim = ssim(predication, test_label).item()
+
             psnr = 10 * log10(1 / loss.item())
             avg_psnr += psnr
 
         final_psnr = avg_psnr / len(val_loader)
-        print("===> Avg. PSNR: {:.4f} dB".format(final_psnr))
+        print("===> Avg. PSNR: {:.4f} dB SSIM ===> {:.4f}".format(final_psnr, batch_ssim))
         validation_results['psnr'] = final_psnr
 
         torch.save(generator.state_dict(),
-                   '/home/pawel/PycharmProjects/EnhanceIt/src/models/testSrgan/cp/cp' + str(epoch) + ".pth")
+                   '/run/timeshift/backup/thesis/EnhanceIt/src/experiment_models/SRGAN_with_blur/models/cp' + str(epoch) + ".pth")
 
         if avg_psnr / len(val_loader) > best_psnr:
             best_epoch = epoch
@@ -170,20 +218,15 @@ for epoch in range(EPOCHS):
         dscr_arr = np.append(dscr_arr, runtime_results['d_score'])
         gscr_arr = np.append(gscr_arr, runtime_results['g_score'])
 
-        csv_path = '/home/pawel/PycharmProjects/EnhanceIt/src/statistics/'
+        csv_path = '//run/timeshift/backup/thesis/EnhanceIt/src/experiment_models/SRGAN_with_blur/plots/'
         data_frame = pd.DataFrame(
 
             data={'D_Loss': results['dis_loss'], 'G_Loss': results['gen_loss'], 'G_Score': results['g_score'],
                   'D_Score': results['d_score'], 'PSNR': results['psnr']},
             index=range(0, epoch + 1))
-        data_frame.to_csv(csv_path + 'training_results.csv', index_label='Epoch')
+        data_frame.to_csv(csv_path + 'training_resultsSRGAN.csv', index_label='Epoch')
+        plt.plot(epoch_arr, loss_arr)
 
-        plt.subplot(2, 1, 1)
-        plt.plot(epoch_arr, loss_arr, label="generator loss")
-        plt.subplot(2, 1, 2)
-        plt.plot(epoch_arr, dscr_arr, label="discriminator score ")
-        plt.plot(epoch_arr, gscr_arr, label="generator score")
-        plt.savefig('plots.png')
 plt.show()
 
 

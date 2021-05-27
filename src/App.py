@@ -4,7 +4,8 @@ import os
 import torchvision.transforms as transforms
 import torch
 
-sys.path.append('/home/pawel/PycharmProjects/EnhanceIt')
+sys.path.append('/run/media/pawel/2ad703a8-67bd-4448-a48f-28efca5d9ca0/thesis/EnhanceIt')
+
 from threading import Thread
 from PIL import Image, ImageFilter
 from torch.autograd import Variable
@@ -28,8 +29,8 @@ parser.add_argument('--arcnn', type=bool, default=False,  required=False, help='
                                                                'then skip that step')
 
 
-def enhance(x, scale, path):
-    main(x, scale, path)
+def enhance(frame_path, x, scale, path):
+    main(frame_path, x, scale, path)
 
 
 def bicubic(path,scale):
@@ -47,7 +48,7 @@ def run():
     if args.scale_factor == 2:
         model_path = MODEL_X2_DIR
     else:
-        model_path = MODEL_X4_DIR
+        model_path = MODEL_SAVE_PATH
 
     # Extraction of frames from an original file, gets the file name and created a new save path in
     # ../enhanced_frames/filename
@@ -64,9 +65,14 @@ def run():
     print("Starting bicubic upscale...")
     p2 = mp.Process(target=bicubic, args=(EXTRACTED_FRAMES_DIR, args.scale_factor))
     p2.start()
-    print("Starting SRGAN...")
 
-    enhance(enhanced_dir, args.scale_factor, model_path)
+    print("Starting SRGAN...")
+    if args.arcnn:
+        print("arcnn srgan")
+        enhance(ARCNN_FRAMES_DIR, enhanced_dir, args.scale_factor, model_path)
+    else:
+        print("srgan")
+        enhance(EXTRACTED_FRAMES_DIR, enhanced_dir, args.scale_factor, model_path)
     # implementation of multiprocessing. Frame Enhanced and bicubic upscaling run in parrarel
     # p = mp.Process(target=enhance, args=(enhanced_dir, model_path,))
     # p.start()

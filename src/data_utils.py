@@ -1,12 +1,14 @@
 from src.constants import *
 import os
 import random
-from torchvision.transforms import Compose, CenterCrop, ToTensor, Resize, ToPILImage, RandomCrop, GaussianBlur
+import io
+from torchvision.transforms import Compose, CenterCrop, ToTensor, Resize, ToPILImage, RandomCrop, GaussianBlur,Lambda
 from PIL import Image, ImageFilter
 import PIL
 import numpy as np
 import io
 from torch.utils.data.dataset import Dataset
+from torchvision.utils import save_image
 
 from tqdm import tqdm
 
@@ -19,6 +21,8 @@ def get_images(root_dir):
                 images.append(os.path.join(dir, file))
 
     return images
+
+
 
 
 
@@ -44,6 +48,15 @@ def high_res_transform(crop_size):
         ToTensor()
     ])
 
+
+def randomJPEGCompresss(image):
+    rand = random.randrange(10,60)
+    outputToIOstream = io.BytesIO()
+    image.save(outputToIOstream, "JPEG", quality= rand, optimice=True)
+    return Image.open(outputToIOstream)
+
+
+
 def set_required_grad(net, requires_grad = False):
     for param in net.parameters():
         param.requires_grad = requires_grad
@@ -52,7 +65,9 @@ def set_required_grad(net, requires_grad = False):
 def low_res_transform(crop_size, upscale_factor):
     return Compose([
         ToPILImage(),
-        # GaussianBlur(kernel_size=1, sigma=0.0),
+        # Lambda(randomJPEGCompresss),
+        GaussianBlur(kernel_size=5, sigma=2),
+        # RandomCrop(crop_size, Image.BICUBIC),
         Resize(crop_size // upscale_factor, interpolation=Image.BICUBIC),
         ToTensor()
     ])
@@ -63,8 +78,8 @@ def get_training_set(root, crop_size, upscale_factor):
     return TrainDatasetFromFolder(dataset_path=root, crop_size=crop_size, upscale_factor=upscale_factor)
 
 
-def get_val_set(root, crop_size, upscale_factor):
-    return ValidateDatasetFromFolder(dataset_path=root, crop_size=crop_size, upscale_factor=upscale_factor)
+def get_val_set(root, upscale_factor):
+    return ValidateDatasetFromFolder(dataset_path=root, upscale_factor=upscale_factor)
 
 
 class TrainDatasetFromFolder(Dataset):
@@ -72,6 +87,7 @@ class TrainDatasetFromFolder(Dataset):
         super(TrainDatasetFromFolder, self).__init__()
         self.files = get_images(dataset_path)
         crop_size = crop_image(crop_size, upscale_factor)
+
         self.hr_transform = high_res_transform(crop_size)
         self.lr_transform = low_res_transform(crop_size, upscale_factor)
 
@@ -86,13 +102,14 @@ class TrainDatasetFromFolder(Dataset):
 
 
 class ValidateDatasetFromFolder(Dataset):
-    def __init__(self, dataset_path, crop_size, upscale_factor):
+    def __init__(self, dataset_path, upscale_factor):
         super(ValidateDatasetFromFolder, self).__init__()
         self.upscale_factor = upscale_factor
-        self.crop_size = crop_size
+        # self.crop_size = crop_size
         self.files = get_images(dataset_path)
 
     def __getitem__(self, index):
+
         hr_image = load_img(self.files[index])
         width, height = hr_image.size
         crop_size = crop_image(min(width, height), self.upscale_factor)
@@ -127,11 +144,11 @@ class CompressDatasetImages(Dataset):
         # if random.random() <= 0.5:
         #     img_to_compress = img_to_compress.rotate(random.choice([90, 180, 270]), expand=True)
 
-        crop_x = random.randint(0, img_to_compress.width - 24)
+        crop_x = random.randint(0, img_to_compress.width - 48)
 
-        crop_y = random.randint(0, img_to_compress.height - 24)
+        crop_y = random.randint(0, img_to_compress.height - 48)
 
-        img_to_compress = img_to_compress.crop((crop_x, crop_y, crop_x + 24, crop_y + 24))
+        img_to_compress = img_to_compress.crop((crop_x, crop_y, crop_x + 48, crop_y + 48))
 
         buffer = io.BytesIO()
         img_to_compress.save(buffer, format='jpeg', quality=self.q)
@@ -168,7 +185,14 @@ class CompressDatasetImages(Dataset):
 
 
 
-# if __name__ == "__main__":
-#     compression = CompressDatasetImages("/home/pawel/PycharmProjects/EnhanceIt/src/Datasets/BSDS500/train/", 10)
-#
-#     compression.compress()
+if __name__ == "__main__":
+
+    path = "/run/timeshift/backup/thesis/EnhanceIt/src/01836.png"
+    hr_transform = high_res_transform(128)
+    lr_transform = low_res_transform(128,4)
+    hr_image = hr_transform(load_img(path))
+    lr_image = lr_transform(hr_image)
+    save_image(lr_image,"test2.png")
+    # compression = CompressDatasetImages("/home/pawel/PycharmProjects/EnhanceIt/src/Datasets/BSDS500/train/", 10)
+
+    # compression.compress()
